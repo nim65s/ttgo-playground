@@ -55,6 +55,7 @@ static void lora_task(void *p) {
       lora_len = lora_receive_packet(lora_buf, sizeof(lora_buf));
       lora_buf[lora_len] = 0;
       ESP_LOGI(TAG, "LoRa packet received: %s", lora_buf);
+      ESP_LOGI(TAG, "LoRa RSSI: %i, SNR: %f", lora_packet_rssi(), lora_packet_snr());
       lora_receive();
     }
     vTaskDelay(1);
@@ -62,6 +63,7 @@ static void lora_task(void *p) {
     vTaskDelay(5000 / portTICK_PERIOD_MS);
     lora_send_packet((uint8_t *)"plop", 5);
     ESP_LOGI(TAG, "LoRa packet sent");
+    ESP_LOGI(TAG, "LoRa RSSI: %i, SNR: %f", lora_packet_rssi(), lora_packet_snr());
 #endif
   }
 }
