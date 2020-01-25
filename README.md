@@ -1,5 +1,10 @@
-# Hello World Example
+# Nim's playground
 
-Starts a FreeRTOS task to print "Hello World"
+BSD-2-Clause.
 
-See the README.md file in the upper level 'examples' directory for more information about examples.
+- [x] FreeRTOS
+- [ ] LED
+- [x] button
+- [x] wifi
+- [x] MQTT
+- [ ] LoRa
