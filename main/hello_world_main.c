@@ -13,6 +13,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "lora.h"
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
 #include "lwip/sockets.h"
@@ -38,6 +39,14 @@ static int s_retry_num = 0;
 static xQueueHandle gpio_evt_queue = NULL;
 static esp_mqtt_client_handle_t client = NULL;
 
+static void lora_task_tx(void *p) {
+  for (;;) {
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    lora_send_packet((uint8_t *)"plop", 5);
+    ESP_LOGI(TAG, "LoRa packet sent");
+  }
+}
+
 static void IRAM_ATTR gpio_isr_handler(void *arg) {
   uint32_t gpio_num = (uint32_t)arg;
   xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
@@ -48,7 +57,8 @@ static void gpio_task_example(void *arg) {
   for (;;) {
     if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
       printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
-      if (client != NULL) esp_mqtt_client_publish(client, "ttgo/pub", "btn", 0, 1, 0);
+      if (client != NULL)
+        esp_mqtt_client_publish(client, "ttgo/pub", "btn", 0, 1, 0);
     }
   }
 }
@@ -172,7 +182,12 @@ void app_main() {
   ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
   wifi_init_sta();
   mqtt_app_start();
-  printf("connected!\n");
+  lora_init();
+  ESP_LOGI(TAG, "WiFi, MQTT & LoRa connected");
+
+  lora_set_frequency(868e6);
+  lora_enable_crc();
+  xTaskCreate(lora_task_tx, "lora_task_tx", 2048, NULL, 9, NULL);
 
   ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT));
   ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_BUTTON, GPIO_MODE_INPUT));
