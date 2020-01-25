@@ -26,7 +26,7 @@
 
 static EventGroupHandle_t s_wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
-static const char *TAG = "ttgo 1";
+static const char *TAG = "ttgo1";
 static int s_retry_num = 0;
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -77,6 +77,8 @@ void wifi_init_sta()
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
+
+    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, TAG));
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
     ESP_LOGI(TAG, "connect to ap SSID:%s password:%s",
