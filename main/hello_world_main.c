@@ -23,11 +23,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define BLINK_GPIO 2
-
+#define EXAMPLE_LED 2
+#define EXAMPLE_BROKER_URL "mqtt://mqtt"
 #define EXAMPLE_ESP_WIFI_SSID "baroustan"
 #define EXAMPLE_ESP_MAXIMUM_RETRY 2
-#define EXAMPLE_BROKER_URL "mqtt://mqtt"
 
 static EventGroupHandle_t s_wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
@@ -155,9 +154,9 @@ void app_main() {
   mqtt_app_start();
   printf("Hello Baroustan blink with wifi!\n");
 
-  gpio_pad_select_gpio(BLINK_GPIO);
-  gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-  gpio_set_level(BLINK_GPIO, 0);
+  gpio_pad_select_gpio(EXAMPLE_LED);
+  gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT);
+  gpio_set_level(EXAMPLE_LED, 0);
 
   /* Print chip information */
   esp_chip_info_t chip_info;
@@ -174,9 +173,9 @@ void app_main() {
 
   for (int i = 60; i >= 0; i--) {
     for (int j = 0; j <= i; j++) {
-      gpio_set_level(BLINK_GPIO, 1);
+      gpio_set_level(EXAMPLE_LED, 1);
       vTaskDelay(100 / portTICK_PERIOD_MS);
-      gpio_set_level(BLINK_GPIO, 0);
+      gpio_set_level(EXAMPLE_LED, 0);
       vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
