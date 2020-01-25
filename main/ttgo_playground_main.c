@@ -24,21 +24,22 @@
 #include <stdio.h>
 #include <string.h>
 
-#define EXAMPLE_LED 2
-#define EXAMPLE_BUTTON 0
+#define TTGO_LED 2
+#define TTGO_BTN 0
 #define EXAMPLE_BROKER_URL "mqtt://mqtt"
 #define EXAMPLE_ESP_WIFI_SSID "baroustan"
 #define EXAMPLE_ESP_MAXIMUM_RETRY 2
-#define EXAMPLE_LORA 0
+#define LORA_RECEIVER 0
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static EventGroupHandle_t s_wifi_event_group;
-const int WIFI_CONNECTED_BIT = BIT0;
+static const int WIFI_CONNECTED_BIT = BIT0;
 static int s_retry_num = 0;
 static xQueueHandle gpio_evt_queue = NULL;
 static esp_mqtt_client_handle_t client = NULL;
-#if EXAMPLE_LORA == 0
+
+#if LORA_RECEIVER == 0
 static int lora_len;
 static uint8_t lora_buf[32];
 static const char *TAG = "ttgo_receiver";
@@ -48,7 +49,7 @@ static const char *TAG = "ttgo_sender";
 
 static void lora_task(void *p) {
   for (;;) {
-#if EXAMPLE_LORA == 0 // LoRa Receiver
+#if LORA_RECEIVER == 0 // LoRa Receiver
     lora_receive();
     while (lora_received()) {
       lora_len = lora_receive_packet(lora_buf, sizeof(lora_buf));
@@ -70,7 +71,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg) {
   xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 }
 
-static void gpio_task_example(void *arg) {
+static void gpio_task(void *arg) {
   uint32_t io_num;
   for (;;) {
     if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
@@ -207,21 +208,21 @@ void app_main() {
   lora_enable_crc();
   xTaskCreate(lora_task, "lora_task", 2048, NULL, 9, NULL);
 
-  ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT));
-  ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_BUTTON, GPIO_MODE_INPUT));
-  ESP_ERROR_CHECK(gpio_set_level(EXAMPLE_LED, 0));
-  ESP_ERROR_CHECK(gpio_set_intr_type(EXAMPLE_BUTTON, GPIO_INTR_NEGEDGE));
+  ESP_ERROR_CHECK(gpio_set_direction(TTGO_LED, GPIO_MODE_OUTPUT));
+  ESP_ERROR_CHECK(gpio_set_direction(TTGO_BTN, GPIO_MODE_INPUT));
+  ESP_ERROR_CHECK(gpio_set_level(TTGO_LED, 0));
+  ESP_ERROR_CHECK(gpio_set_intr_type(TTGO_BTN, GPIO_INTR_NEGEDGE));
   gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-  xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
+  xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
   ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT));
-  ESP_ERROR_CHECK(gpio_isr_handler_add(EXAMPLE_BUTTON, gpio_isr_handler,
-                                       (void *)EXAMPLE_BUTTON));
+  ESP_ERROR_CHECK(
+      gpio_isr_handler_add(TTGO_BTN, gpio_isr_handler, (void *)TTGO_BTN));
 
   for (int i = 60; i >= 0; i--) {
     for (int j = 0; j <= i; j++) {
-      gpio_set_level(EXAMPLE_LED, 1);
+      gpio_set_level(TTGO_LED, 1);
       vTaskDelay(100 / portTICK_PERIOD_MS);
-      gpio_set_level(EXAMPLE_LED, 0);
+      gpio_set_level(TTGO_LED, 0);
       vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 

@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := hello-world
+PROJECT_NAME := ttgo-playground
 
 include $(IDF_PATH)/make/project.mk
 
