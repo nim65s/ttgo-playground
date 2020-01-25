@@ -48,13 +48,12 @@ static void gpio_task_example(void *arg) {
   for (;;) {
     if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
       printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
-      esp_mqtt_client_publish(client, "ttgo/pub", "btn", 0, 1, 0);
+      if (client != NULL) esp_mqtt_client_publish(client, "ttgo/pub", "btn", 0, 1, 0);
     }
   }
 }
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
-  /*esp_mqtt_client_handle_t client = event->client;*/
   int msg_id;
   // your_context_t *context = event->context;
   switch (event->event_id) {
