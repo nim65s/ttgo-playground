@@ -7,4 +7,4 @@ BSD-2-Clause.
 - [x] button
 - [x] wifi
 - [x] MQTT
-- [ ] LoRa
+- [x] LoRa

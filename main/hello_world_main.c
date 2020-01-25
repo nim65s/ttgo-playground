@@ -29,21 +29,39 @@
 #define EXAMPLE_BROKER_URL "mqtt://mqtt"
 #define EXAMPLE_ESP_WIFI_SSID "baroustan"
 #define EXAMPLE_ESP_MAXIMUM_RETRY 2
+#define EXAMPLE_LORA 0
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static EventGroupHandle_t s_wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
-static const char *TAG = "ttgo1";
 static int s_retry_num = 0;
 static xQueueHandle gpio_evt_queue = NULL;
 static esp_mqtt_client_handle_t client = NULL;
+#if EXAMPLE_LORA == 0
+static int lora_len;
+static uint8_t lora_buf[32];
+static const char *TAG = "ttgo_receiver";
+#else
+static const char *TAG = "ttgo_sender";
+#endif
 
-static void lora_task_tx(void *p) {
+static void lora_task(void *p) {
   for (;;) {
+#if EXAMPLE_LORA == 0 // LoRa Receiver
+    lora_receive();
+    while (lora_received()) {
+      lora_len = lora_receive_packet(lora_buf, sizeof(lora_buf));
+      lora_buf[lora_len] = 0;
+      ESP_LOGI(TAG, "LoRa packet received: %s", lora_buf);
+      lora_receive();
+    }
+    vTaskDelay(1);
+#else // LoRa sender
     vTaskDelay(5000 / portTICK_PERIOD_MS);
     lora_send_packet((uint8_t *)"plop", 5);
     ESP_LOGI(TAG, "LoRa packet sent");
+#endif
   }
 }
 
@@ -187,7 +205,7 @@ void app_main() {
 
   lora_set_frequency(868e6);
   lora_enable_crc();
-  xTaskCreate(lora_task_tx, "lora_task_tx", 2048, NULL, 9, NULL);
+  xTaskCreate(lora_task, "lora_task", 2048, NULL, 9, NULL);
 
   ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT));
   ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_BUTTON, GPIO_MODE_INPUT));
@@ -207,7 +225,7 @@ void app_main() {
       vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    printf("Restarting in %d seconds...\n", i);
+    printf("Restarting in %d...\n", i);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
   printf("Restarting now.\n");
