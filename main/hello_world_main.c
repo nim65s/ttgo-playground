@@ -24,17 +24,37 @@
 #include <string.h>
 
 #define EXAMPLE_LED 2
+#define EXAMPLE_BUTTON 0
 #define EXAMPLE_BROKER_URL "mqtt://mqtt"
 #define EXAMPLE_ESP_WIFI_SSID "baroustan"
 #define EXAMPLE_ESP_MAXIMUM_RETRY 2
+
+#define ESP_INTR_FLAG_DEFAULT 0
 
 static EventGroupHandle_t s_wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 static const char *TAG = "ttgo1";
 static int s_retry_num = 0;
+static xQueueHandle gpio_evt_queue = NULL;
+static esp_mqtt_client_handle_t client = NULL;
+
+static void IRAM_ATTR gpio_isr_handler(void *arg) {
+  uint32_t gpio_num = (uint32_t)arg;
+  xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+}
+
+static void gpio_task_example(void *arg) {
+  uint32_t io_num;
+  for (;;) {
+    if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+      printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+      esp_mqtt_client_publish(client, "ttgo/pub", "btn", 0, 1, 0);
+    }
+  }
+}
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
-  esp_mqtt_client_handle_t client = event->client;
+  /*esp_mqtt_client_handle_t client = event->client;*/
   int msg_id;
   // your_context_t *context = event->context;
   switch (event->event_id) {
@@ -85,7 +105,7 @@ static void mqtt_app_start(void) {
       // .user_context = (void *)your_context
   };
 
-  esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+  client = esp_mqtt_client_init(&mqtt_cfg);
   esp_mqtt_client_start(client);
 }
 
@@ -149,27 +169,21 @@ void app_main() {
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
+
   ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
   wifi_init_sta();
   mqtt_app_start();
-  printf("Hello Baroustan blink with wifi!\n");
+  printf("connected!\n");
 
-  gpio_pad_select_gpio(EXAMPLE_LED);
-  gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT);
-  gpio_set_level(EXAMPLE_LED, 0);
-
-  /* Print chip information */
-  esp_chip_info_t chip_info;
-  esp_chip_info(&chip_info);
-  printf("This is ESP32 chip with %d CPU cores, WiFi%s%s, ", chip_info.cores,
-         (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-         (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
-
-  printf("silicon revision %d, ", chip_info.revision);
-
-  printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
-         (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded"
-                                                       : "external");
+  ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_LED, GPIO_MODE_OUTPUT));
+  ESP_ERROR_CHECK(gpio_set_direction(EXAMPLE_BUTTON, GPIO_MODE_INPUT));
+  ESP_ERROR_CHECK(gpio_set_level(EXAMPLE_LED, 0));
+  ESP_ERROR_CHECK(gpio_set_intr_type(EXAMPLE_BUTTON, GPIO_INTR_NEGEDGE));
+  gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+  xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
+  ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT));
+  ESP_ERROR_CHECK(gpio_isr_handler_add(EXAMPLE_BUTTON, gpio_isr_handler,
+                                       (void *)EXAMPLE_BUTTON));
 
   for (int i = 60; i >= 0; i--) {
     for (int j = 0; j <= i; j++) {

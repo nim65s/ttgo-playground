@@ -3,7 +3,7 @@
 BSD-2-Clause.
 
 - [x] FreeRTOS
-- [ ] LED
+- [x] LED
 - [x] button
 - [x] wifi
 - [x] MQTT
