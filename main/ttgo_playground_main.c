@@ -2,32 +2,35 @@
  * BSD-2-Clause.
  */
 
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+
 #include "driver/gpio.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
 #include "esp_spi_flash.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
 #include "lora.h"
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
 #include "lwip/sockets.h"
 #include "mqtt_client.h"
 #include "nvs_flash.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
 #define TTGO_LED 2
 #define TTGO_BTN 0
-#define EXAMPLE_BROKER_URL "mqtt://mqtt"
-#define EXAMPLE_ESP_WIFI_SSID "baroustan"
+#define EXAMPLE_BROKER_URL "mqtt://nim:ju6ZaeGhnooSh4Na@192.168.8.111:1884"
+#define EXAMPLE_ESP_WIFI_SSID "azv"
+#define EXAMPLE_ESP_WIFI_PASSWORD "PetitElephantDeviendraGrand8D"
 #define EXAMPLE_ESP_MAXIMUM_RETRY 2
 #define LORA_RECEIVER 0
 
@@ -175,7 +178,7 @@ void wifi_init_sta() {
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
   wifi_config_t wifi_config = {
-      .sta = {.ssid = EXAMPLE_ESP_WIFI_SSID, .password = EXAMPLE_ESP_WIFI_SSID},
+      .sta = {.ssid = EXAMPLE_ESP_WIFI_SSID, .password = EXAMPLE_ESP_WIFI_PASSWORD},
   };
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -186,10 +189,10 @@ void wifi_init_sta() {
 
   ESP_LOGI(TAG, "wifi_init_sta finished.");
   ESP_LOGI(TAG, "connect to ap SSID:%s password:%s", EXAMPLE_ESP_WIFI_SSID,
-           EXAMPLE_ESP_WIFI_SSID);
+           EXAMPLE_ESP_WIFI_PASSWORD);
 }
 
-void app_main() {
+void app_main(void) {
   printf("Hello Baroustan blink!\n");
 
   esp_err_t ret = nvs_flash_init();
