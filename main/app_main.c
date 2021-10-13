@@ -45,7 +45,7 @@
 
 #define TTGO_LED 2
 #define TTGO_BTN 0
-#define LORA_RECEIVER 1
+#define LORA_RECEIVER 0
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
@@ -63,6 +63,7 @@ static const char *TAG = "ttgo_sender";
 static void lora_task(void *p) {
   for (;;) {
 #if LORA_RECEIVER == 0 // LoRa Receiver
+    /*printf("LORA RECEIVER 0.\n");*/
     lora_receive();
     while (lora_received()) {
       lora_len = lora_receive_packet(lora_buf, sizeof(lora_buf));
@@ -73,6 +74,7 @@ static void lora_task(void *p) {
     }
     vTaskDelay(1);
 #else // LoRa sender
+    printf("LORA RECEIVER 1.\n");
     vTaskDelay(5000 / portTICK_PERIOD_MS);
     lora_send_packet((uint8_t *)"plop", 5);
     ESP_LOGI(TAG, "LoRa packet sent");
