@@ -70,6 +70,8 @@ static void lora_task(void *p) {
       lora_buf[lora_len] = 0;
       ESP_LOGI(TAG, "LoRa packet received: %s", lora_buf);
       ESP_LOGI(TAG, "LoRa RSSI: %i, SNR: %f", lora_packet_rssi(), lora_packet_snr());
+      esp_mqtt_client_publish(client, "ttgo/receiver", "got pkt", 0, 0, 0);
+      esp_mqtt_client_publish(client, "ttgo/receiver", (char *)lora_buf, 0, 0, 0);
       lora_receive();
     }
     vTaskDelay(1);
@@ -79,6 +81,7 @@ static void lora_task(void *p) {
     lora_send_packet((uint8_t *)"plop", 5);
     ESP_LOGI(TAG, "LoRa packet sent");
     ESP_LOGI(TAG, "LoRa RSSI: %i, SNR: %f", lora_packet_rssi(), lora_packet_snr());
+    esp_mqtt_client_publish(client, "ttgo/sender", "sent pkt", 0, 0, 0);
 #endif
   }
 }
